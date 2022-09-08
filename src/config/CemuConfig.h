@@ -307,6 +307,16 @@ struct fmt::formatter<CrashDump> : formatter<string_view> {
 	}
 };
 
+namespace DefaultColumnSize {
+	enum : unsigned int {
+		name = 500,
+		version = 60,
+		dlc = 50,
+		game_time = 140,
+		game_started = 160,
+		region = 80,
+	};
+};
 
 struct CemuConfig
 {
@@ -375,7 +385,12 @@ struct CemuConfig
 	std::string game_list_column_order;
 	struct
 	{
-		int name = -3, version = -3, dlc = -3, game_time = -3, game_started = -3, region = -3;
+		unsigned int name = DefaultColumnSize::name;
+		unsigned int version = DefaultColumnSize::version;
+		unsigned int dlc = DefaultColumnSize::dlc;
+		unsigned int game_time = DefaultColumnSize::game_time;
+		unsigned int game_started = DefaultColumnSize::game_started;
+		unsigned int region = DefaultColumnSize::region;
 	} column_width{};
 
 	// graphics

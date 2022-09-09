@@ -89,12 +89,12 @@ void CemuConfig::Load(XMLConfigParser& parser)
 	auto gamelist = parser.get("GameList");
 	game_list_style = gamelist.get("style", 0);
 	game_list_column_order = gamelist.get("order", "");
-	column_width.name = gamelist.get("name_width", -3);
-	column_width.version = gamelist.get("version_width", -3);
-	column_width.dlc = gamelist.get("dlc_width", -3);
-	column_width.game_time = gamelist.get("game_time_width", -3);
-	column_width.game_started = gamelist.get("game_started_width", -3);
-	column_width.region = gamelist.get("region_width", -3);
+	column_width.name = std::max(gamelist.get("name_width", column_width.name), 0u);
+	column_width.version = std::max(gamelist.get("version_width", column_width.version), 0u);
+	column_width.dlc = std::max(gamelist.get("dlc_width", column_width.dlc), 0u);
+	column_width.game_time = std::max(gamelist.get("game_time_width", column_width.game_time), 0u);
+	column_width.game_started = std::max(gamelist.get("game_started_width", column_width.game_started), 0u);
+	column_width.region = std::max(gamelist.get("region_width", column_width.region), 0u);
 
 	recent_launch_files.clear();
 	auto launch_parser = parser.get("RecentLaunchFiles");

@@ -197,10 +197,10 @@ boost::optional<wxTitleManagerList::TitleEntry&> wxTitleManagerList::GetTitleEnt
 
 boost::optional<const wxTitleManagerList::TitleEntry&> wxTitleManagerList::GetTitleEntry(const fs::path& path) const
 {
-	const auto tmp = path.generic_u8string();
+	const auto tmp = _pathToUtf8(path);
 	for (const auto& data : m_data)
 	{
-		if (boost::iequals(data->entry.path.generic_u8string(), tmp))
+		if (boost::iequals(_pathToUtf8(data->entry.path), tmp))
 			return data->entry;
 	}
 
@@ -208,10 +208,10 @@ boost::optional<const wxTitleManagerList::TitleEntry&> wxTitleManagerList::GetTi
 }
 boost::optional<wxTitleManagerList::TitleEntry&> wxTitleManagerList::GetTitleEntry(const fs::path& path)
 {
-	const auto tmp = path.generic_u8string();
+	const auto tmp = _pathToUtf8(path);
 	for (const auto& data : m_data)
 	{
-		if (boost::iequals(data->entry.path.generic_u8string(), tmp))
+		if (boost::iequals(_pathToUtf8(data->entry.path), tmp))
 			return data->entry;
 	}
 
@@ -290,24 +290,25 @@ void wxTitleManagerList::OnConvertToCompressedFormat(uint64 titleId)
 		}
 	}
 
-	std::string msg = wxHelper::MakeUTF8(_("The following content will be converted to a compressed Wii U archive file (.wua):\n \n"));
+	std::string msg = wxHelper::MakeUTF8(_("The following content will be converted to a compressed Wii U archive file (.wua):"));
+	msg.append("\n \n");
 	
 	if (titleInfo_base.IsValid())
-		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Base game: {}"))), _utf8Wrapper(titleInfo_base.GetPath())));
+		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Base game: {}"))), _pathToUtf8(titleInfo_base.GetPath())));
 	else
 		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Base game: Not installed")))));
 
 	msg.append("\n");
 
 	if (titleInfo_update.IsValid())
-		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Update: {}"))), _utf8Wrapper(titleInfo_update.GetPath())));
+		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Update: {}"))), _pathToUtf8(titleInfo_update.GetPath())));
 	else
 		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("Update: Not installed")))));
 
 	msg.append("\n");
 
 	if (titleInfo_aoc.IsValid())
-		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("DLC: {}"))), _utf8Wrapper(titleInfo_aoc.GetPath())));
+		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("DLC: {}"))), _pathToUtf8(titleInfo_aoc.GetPath())));
 	else
 		msg.append(fmt::format(fmt::runtime(wxHelper::MakeUTF8(_("DLC: Not installed")))));
 
@@ -342,7 +343,7 @@ void wxTitleManagerList::OnConvertToCompressedFormat(uint64 titleId)
 	if (!GetConfig().game_paths.empty())
 		defaultDir = GetConfig().game_paths.front();
 	// get the short name, which we will use as a suggested default file name
-	std::string defaultFileName = shortName;
+	std::string defaultFileName = std::move(shortName);
 	boost::replace_all(defaultFileName, "/", "");
 	boost::replace_all(defaultFileName, "\\", "");
 
@@ -473,7 +474,7 @@ void wxTitleManagerList::OnConvertToCompressedFormat(uint64 titleId)
 		{
 			std::string temporaryMountPath = TitleInfo::GetUniqueTempMountingPath();
 			titleInfo->Mount(temporaryMountPath.c_str(), "", FSC_PRIORITY_BASE);
-			bool r = RecursivelyAddFiles(fmt::format("{:016x}_v{}/", titleInfo->GetAppTitleId(), titleInfo->GetAppTitleVersion()), temporaryMountPath.c_str());
+			bool r = RecursivelyAddFiles(fmt::format("{:016x}_v{}/", titleInfo->GetAppTitleId(), titleInfo->GetAppTitleVersion()), temporaryMountPath);
 			titleInfo->Unmount(temporaryMountPath.c_str());
 			return r;
 		}
@@ -778,9 +779,9 @@ bool wxTitleManagerList::DeleteEntry(long index, const TitleEntry& entry)
 	wxString msg;
 	const bool is_directory = fs::is_directory(entry.path);
 	if(is_directory)
-		msg = wxStringFormat2(_("Are you really sure that you want to delete the following folder:\n{}"), wxHelper::FromUtf8(_utf8Wrapper(entry.path)));
+		msg = wxStringFormat2(_("Are you really sure that you want to delete the following folder:\n{}"), wxHelper::FromUtf8(_pathToUtf8(entry.path)));
 	else
-		msg = wxStringFormat2(_("Are you really sure that you want to delete the following file:\n{}"), wxHelper::FromUtf8(_utf8Wrapper(entry.path)));
+		msg = wxStringFormat2(_("Are you really sure that you want to delete the following file:\n{}"), wxHelper::FromUtf8(_pathToUtf8(entry.path)));
 	
 	const auto result = wxMessageBox(msg, _("Warning"), wxYES_NO | wxCENTRE | wxICON_EXCLAMATION, this);
 	if (result == wxNO)
@@ -852,7 +853,7 @@ void wxTitleManagerList::OnContextMenuSelected(wxCommandEvent& event)
 	case kContextMenuOpenDirectory:
 		{
 			const auto path = fs::is_directory(entry->path) ? entry->path : entry->path.parent_path();
-			wxLaunchDefaultBrowser(wxHelper::FromUtf8(fmt::format("file:{}", _utf8Wrapper(path))));
+			wxLaunchDefaultBrowser(wxHelper::FromUtf8(fmt::format("file:{}", _pathToUtf8(path))));
 		}
 		break;
 	case kContextMenuDelete:

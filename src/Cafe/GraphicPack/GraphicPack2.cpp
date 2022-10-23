@@ -31,12 +31,12 @@ void GraphicPack2::LoadGraphicPack(fs::path graphicPackPath)
 
 	if (!iniParser.NextSection())
 	{
-		cemuLog_force("{}: Does not contain any sections", _utf8Wrapper(rulesPath));
+		cemuLog_force("{}: Does not contain any sections", _pathToUtf8(rulesPath));
 		return;
 	}
 	if (!boost::iequals(iniParser.GetCurrentSectionName(), "Definition"))
 	{
-		cemuLog_force("{}: [Definition] must be the first section", _utf8Wrapper(rulesPath));
+		cemuLog_force("{}: [Definition] must be the first section", _pathToUtf8(rulesPath));
 		return;
 	}
 
@@ -47,7 +47,7 @@ void GraphicPack2::LoadGraphicPack(fs::path graphicPackPath)
 		auto [ptr, ec] = std::from_chars(option_version->data(), option_version->data() + option_version->size(), versionNum);
 		if (ec != std::errc{})
 		{
-			cemuLog_force("{}: Unable to parse version", _utf8Wrapper(rulesPath));
+			cemuLog_force("{}: Unable to parse version", _pathToUtf8(rulesPath));
 			return;
 		}
 
@@ -57,13 +57,13 @@ void GraphicPack2::LoadGraphicPack(fs::path graphicPackPath)
 			return;
 		}
 	}
-	cemuLog_force("{}: Outdated graphic pack", _utf8Wrapper(rulesPath));
+	cemuLog_force("{}: Outdated graphic pack", _pathToUtf8(rulesPath));
 }
 
 void GraphicPack2::LoadAll()
 {
 	std::error_code ec;
-	fs::path basePath = ActiveSettings::GetPath("graphicPacks");
+	fs::path basePath = ActiveSettings::GetUserDataPath("graphicPacks");
 	for (fs::recursive_directory_iterator it(basePath, ec); it != end(it); ++it)
 	{
 		if (!it->is_directory(ec))
@@ -93,7 +93,7 @@ bool GraphicPack2::LoadGraphicPack(const std::wstring& filename, IniParser& rule
 		if (it == config_entries.cend())
 		{
 			// check for relative path
-			it = config_entries.find(MakeRelativePath(gp->GetFilename2()).lexically_normal());
+			it = config_entries.find(MakeRelativePath(ActiveSettings::GetUserDataPath(), gp->GetFilename2()).lexically_normal());
 		}
 
 		if (it != config_entries.cend())
@@ -1020,9 +1020,9 @@ bool GraphicPack2::Deactivate()
 	m_upscaling_shader_ud.reset();
 	m_downscaling_shader_ud.reset();
 
-	m_output_shader_source = "";
-	m_upscaling_shader_source = "";
-	m_downscaling_shader_source = "";
+	m_output_shader_source.clear();
+	m_upscaling_shader_source.clear();
+	m_downscaling_shader_source.clear();
 	
 	if (HasCustomVSyncFrequency())
 	{

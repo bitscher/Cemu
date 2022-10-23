@@ -327,10 +327,14 @@ void CemuConfig::Load(XMLConfigParser& parser)
 	auto acc = parser.get("Account");
 	account.m_persistent_id = acc.get("PersistentId", account.m_persistent_id);
 	account.online_enabled = acc.get("OnlineEnabled", account.online_enabled);
-
+	account.active_service = acc.get("ActiveService",account.active_service);
 	// debug
 	auto debug = parser.get("Debug");
-	crash_dump = debug.get("CrashDump", crash_dump);
+#if BOOST_OS_WINDOWS
+	crash_dump = debug.get("CrashDumpWindows", crash_dump);
+#elif BOOST_OS_UNIX
+	crash_dump = debug.get("CrashDumpUnix", crash_dump);
+#endif
 
 	// input
 	auto input = parser.get("Input");
@@ -431,7 +435,7 @@ void CemuConfig::Save(XMLConfigParser& parser)
 	for (const auto& game : graphic_pack_entries)
 	{
 		auto entry = graphic_pack_parser.set("Entry");
-		entry.set_attribute("filename",_utf8Wrapper(game.first).c_str());
+		entry.set_attribute("filename",_pathToUtf8(game.first).c_str());
 		for(const auto& kv : game.second)
 		{
 			// TODO: less hacky pls
@@ -498,10 +502,14 @@ void CemuConfig::Save(XMLConfigParser& parser)
 	auto acc = config.set("Account");
 	acc.set("PersistentId", account.m_persistent_id.GetValue());
 	acc.set("OnlineEnabled", account.online_enabled.GetValue());
-
+	acc.set("ActiveService",account.active_service.GetValue());
 	// debug
 	auto debug = config.set("Debug");
-	debug.set("CrashDump", crash_dump.GetValue());
+#if BOOST_OS_WINDOWS
+	debug.set("CrashDumpWindows", crash_dump.GetValue());
+#elif BOOST_OS_UNIX
+	debug.set("CrashDumpUnix", crash_dump.GetValue());
+#endif
 
 	// input
 	auto input = config.set("Input");
@@ -571,7 +579,7 @@ void CemuConfig::SetGameListCustomName(uint64 titleId, std::string customName)
 			return;
 		gameEntry = CreateGameEntry(titleId);
 	}
-	gameEntry->custom_name = customName;
+	gameEntry->custom_name = std::move(customName);
 }
 
 void CemuConfig::AddRecentlyLaunchedFile(std::wstring_view file)

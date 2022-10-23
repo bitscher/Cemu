@@ -69,7 +69,6 @@
 #include <boost/nowide/convert.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -246,6 +245,12 @@ inline uint64 _udiv128(uint64 highDividend, uint64 lowDividend, uint64 divisor, 
     #error No definition for DLLEXPORT
 #endif
 
+#if BOOST_OS_WINDOWS
+	#define NOEXPORT
+#elif defined(__GNUC__)
+	#define NOEXPORT __attribute__ ((visibility ("hidden")))
+#endif
+
 #ifdef __GNUC__
 #include <cpuid.h>
 #endif
@@ -361,7 +366,7 @@ inline void cemu_assert(bool _condition)
     }
 }
 
-#ifdef PUBLIC_RELEASE
+#ifndef CEMU_DEBUG_ASSERT
 //#define cemu_assert_debug(__cond) -> Forcing __cond not to be evaluated currently has unexpected side-effects
 
 inline void cemu_assert_debug(bool _condition)
@@ -420,25 +425,19 @@ inline std::string_view _utf8Wrapper(std::u8string_view input)
     return v;
 }
 
-// returns a std::u8string as std::string, the contents are left as-is
-inline std::string _utf8Wrapper(const std::u8string& u8str)
+// convert fs::path to utf8 encoded string
+inline std::string _pathToUtf8(const fs::path& path)
 {
-    std::string v;
-    v.resize(u8str.size());
-    memcpy(v.data(), u8str.data(), u8str.size());
+    std::u8string strU8 = path.generic_u8string();
+    std::string v((const char*)strU8.data(), strU8.size());
     return v;
 }
 
-// get utf8 generic path string directly from std::filesystem::path
-inline std::string _utf8Wrapper(const fs::path& path)
+// convert utf8 encoded string to fs::path
+inline fs::path _utf8ToPath(std::string_view input)
 {
-    return _utf8Wrapper(path.generic_u8string());
-}
-
-inline std::u8string_view _asUtf8(std::string_view input)
-{
-	std::basic_string_view<char8_t> v((char8_t*)input.data(), input.size());
-	return v;
+    std::basic_string_view<char8_t> v((char8_t*)input.data(), input.size());
+    return fs::path(v);
 }
 
 class RunAtCemuBoot // -> replaces this with direct function calls. Linkers other than MSVC may optimize way object files entirely if they are not referenced from outside. So a source file self-registering using this would be causing issues
